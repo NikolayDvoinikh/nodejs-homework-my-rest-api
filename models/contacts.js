@@ -1,62 +1,68 @@
-const fs = require("fs/promises");
+const { Schema, model } = require("mongoose");
 
-const { nanoid } = require("nanoid");
+const Joi = require("joi");
 
-const path = require("path");
+const { mongooseError } = require("../utils");
 
-const contactsPath = path.resolve("models", "contacts.json");
+const contactSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Set name for contact"],
+    },
+    email: {
+      type: String,
+    },
+    phone: {
+      type: String,
+    },
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { versionKey: false }
+);
 
-const listContacts = async () => {
-  const result = await fs.readFile(contactsPath);
-  return JSON.parse(result);
-};
+// якщо при валідації mongoose.Schema під час збереження данних сталася помилка,
+//статус помилки не записується і за замовчуванням є 500,
+// пишемо функцію яка записує статус 400' - це мідлвара mongoose
+contactSchema.post("save", mongooseError);
 
-const getContactById = async (contactId) => {
-  const allContacts = await listContacts();
-  const result = allContacts.find(({ id }) => id === contactId);
-  return result || null;
-};
+const Contact = model("contact", contactSchema);
 
-const addContact = async (body) => {
-  const id = nanoid();
-  const newContact = { id, ...body };
-  const allContacts = await listContacts();
-  const index = allContacts.findIndex(({ email }) => email === body.email);
-  if (index !== -1) {
-    return null;
-  }
-  allContacts.push(newContact);
-  await fs.writeFile(contactsPath, JSON.stringify(allContacts, null, 2));
-  return newContact;
-};
+const validationSchemaAdd = Joi.object({
+  name: Joi.string().trim().min(3).required(),
+  email: Joi.string()
+    .email({
+      minDomainSegments: 2,
+      tlds: { allow: true },
+    })
+    .trim()
+    .required(),
+  phone: Joi.string().trim().min(5).required(),
+  favorite: Joi.boolean(),
+});
 
-const updateContact = async (contactId, body) => {
-  const allContacts = await listContacts();
-  const index = allContacts.findIndex(({ id }) => id === contactId);
-  if (index === -1) {
-    return null;
-  }
-  allContacts[index] = { ...allContacts[index], ...body };
-  await fs.writeFile(contactsPath, JSON.stringify(allContacts, null, 2));
-  return allContacts[index];
-};
+const validationSchemaUpdate = Joi.object({
+  name: Joi.string().trim().min(3),
+  email: Joi.string()
+    .email({
+      minDomainSegments: 2,
+      tlds: { allow: true },
+    })
+    .trim(),
+  phone: Joi.string().trim().min(5),
+  favorite: Joi.boolean(),
+});
 
-const removeContact = async (contactId) => {
-  const allContacts = await listContacts();
-  const index = allContacts.findIndex(({ id }) => id === contactId);
-  if (index === -1) {
-    return null;
-  }
-  const [deletedContact] = allContacts.splice(index, 1);
-
-  await fs.writeFile(contactsPath, JSON.stringify(allContacts, null, 2));
-  return deletedContact;
-};
+const validationSchemaFavoriteUpdate = Joi.object({
+  favorite: Joi.boolean().required(),
+});
 
 module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
+  Contact,
+  validationSchemaAdd,
+  validationSchemaFavoriteUpdate,
+  validationSchemaUpdate,
 };

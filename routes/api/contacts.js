@@ -6,9 +6,16 @@ const {
   ctrlGetContactById,
   ctrlUpdateContact,
   ctrlRemoveContact,
+  ctrlUpdateStatusContact,
 } = require("../../controllers");
 
-const { validAddContact, validUpdateContact } = require("../../validation");
+const {
+  validationSchemaAdd,
+  validationSchemaFavoriteUpdate,
+  validationSchemaUpdate,
+} = require("../../models");
+
+const { validateBody } = require("../../utils");
 
 const router = express.Router();
 
@@ -16,10 +23,20 @@ router.get("/", ctrlListContact);
 
 router.get("/:contactId", ctrlGetContactById);
 
-router.post("/", validAddContact, ctrlAddContact);
+router.post("/", validateBody(validationSchemaAdd, "add"), ctrlAddContact);
 
 router.delete("/:contactId", ctrlRemoveContact);
 
-router.put("/:contactId", validUpdateContact, ctrlUpdateContact);
+router.put(
+  "/:contactId",
+  validateBody(validationSchemaUpdate),
+  ctrlUpdateContact
+);
+
+router.patch(
+  "/:contactId/favorite",
+  validateBody(validationSchemaFavoriteUpdate),
+  ctrlUpdateStatusContact
+);
 
 module.exports = router;
