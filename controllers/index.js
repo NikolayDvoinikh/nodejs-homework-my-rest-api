@@ -4,6 +4,7 @@ const {
   ctrlGetContactById,
   ctrlUpdateContact,
   ctrlRemoveContact,
+  ctrlUpdateStatusContact,
 } = require("./controllers");
 
 module.exports = {
@@ -12,4 +13,5 @@ module.exports = {
   ctrlGetContactById,
   ctrlUpdateContact,
   ctrlRemoveContact,
+  ctrlUpdateStatusContact,
 };
