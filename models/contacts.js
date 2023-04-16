@@ -20,6 +20,10 @@ const contactSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+    },
   },
   { versionKey: false }
 );
@@ -32,7 +36,7 @@ contactSchema.post("save", mongooseError);
 const Contact = model("contact", contactSchema);
 
 const validationSchemaAdd = Joi.object({
-  name: Joi.string().trim().min(3).required(),
+  name: Joi.string().min(3).trim().required(),
   email: Joi.string()
     .email({
       minDomainSegments: 2,
@@ -40,7 +44,7 @@ const validationSchemaAdd = Joi.object({
     })
     .trim()
     .required(),
-  phone: Joi.string().trim().min(5).required(),
+  phone: Joi.string().min(5).trim().required(),
   favorite: Joi.boolean(),
 });
 
