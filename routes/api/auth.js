@@ -20,7 +20,7 @@ router.post("/login", validateBody(loginSchema), login);
 
 router.post("/logout", authenticate, logout);
 
-router.post("/current", authenticate, current);
+router.get("/current", authenticate, current);
 
 router.patch("/", authenticate, validateBody(subSchema), updateSubscription);
 
