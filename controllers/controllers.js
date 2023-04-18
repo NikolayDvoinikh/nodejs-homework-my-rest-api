@@ -4,8 +4,22 @@ const { HttpError } = require("../helpers");
 const { ctrlWrapper } = require("../utils");
 
 const ctrlListContact = async (req, res) => {
-  const result = await Contact.find({});
-  res.json(result);
+  const { _id: owner } = req.user;
+  const { page = 1, limit = 20, favorite } = req.query;
+  const skip = (page - 1) * limit;
+  if (!favorite) {
+    const result = await Contact.find({ owner }, "-owner", {
+      skip,
+      limit,
+    });
+    res.json(result);
+    return;
+  }
+  const filteredResult = await Contact.find({ owner, favorite }, "-owner", {
+    skip,
+    limit,
+  });
+  res.json(filteredResult);
 };
 
 const ctrlGetContactById = async (req, res) => {
@@ -17,7 +31,8 @@ const ctrlGetContactById = async (req, res) => {
 };
 
 const ctrlAddContact = async (req, res) => {
-  const result = await Contact.create(req.body);
+  const { _id: owner } = req.user;
+  const result = await Contact.create({ ...req.body, owner });
   if (!result) {
     throw HttpError(400);
   }
@@ -40,14 +55,13 @@ const ctrlUpdateContact = async (req, res) => {
 };
 
 const ctrlUpdateStatusContact = async (req, res) => {
-  if (!Object.keys(req.body).length || !req.body) {
+  const { body, params } = req;
+  if (!Object.keys(body).length || !body) {
     throw HttpError(400, "missing field favorite");
   }
-  const result = await Contact.findByIdAndUpdate(
-    req.params.contactId,
-    req.body,
-    { new: true }
-  );
+  const result = await Contact.findByIdAndUpdate(params.contactId, body, {
+    new: true,
+  });
 
   if (!result) {
     throw HttpError(404);

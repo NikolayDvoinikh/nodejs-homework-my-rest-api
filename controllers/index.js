@@ -7,6 +7,14 @@ const {
   ctrlUpdateStatusContact,
 } = require("./controllers");
 
+const {
+  register,
+  login,
+  current,
+  logout,
+  updateSubscription,
+} = require("./auth");
+
 module.exports = {
   ctrlListContact,
   ctrlAddContact,
@@ -14,4 +22,9 @@ module.exports = {
   ctrlUpdateContact,
   ctrlRemoveContact,
   ctrlUpdateStatusContact,
+  register,
+  login,
+  current,
+  logout,
+  updateSubscription,
 };
