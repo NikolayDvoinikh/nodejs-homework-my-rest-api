@@ -2,13 +2,20 @@ const express = require("express");
 
 const router = express.Router();
 
-const { registerSchema, loginSchema, subSchema } = require("../../models");
+const {
+  registerSchema,
+  loginSchema,
+  subSchema,
+  emailSchema,
+} = require("../../models");
 const { validateBody } = require("../../utils");
 const { authenticate, upload } = require("../../middlewares");
 
 const {
   register,
   login,
+  verificationEmail,
+  resentVerificationEmail,
   current,
   logout,
   updateSubscription,
@@ -31,5 +38,9 @@ router.patch(
 );
 
 router.patch("/avatars", authenticate, upload.single("avatar"), updateAvatar);
+
+router.get("/verify/:verificationToken", verificationEmail);
+
+router.post("/verify", validateBody(emailSchema), resentVerificationEmail);
 
 module.exports = router;
