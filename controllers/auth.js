@@ -7,7 +7,7 @@ const path = require("path");
 const { HttpError, sendEmail } = require("../helpers");
 const { ctrlWrapper } = require("../utils");
 
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { nanoid } = require("nanoid");
 
@@ -65,7 +65,7 @@ const login = async (req, res) => {
     throw HttpError(401, "Email not verified");
   }
 
-  passwordValidation = await bcrypt.compare(password, user.password);
+  const passwordValidation = await bcrypt.compare(password, user.password);
   if (!passwordValidation) {
     throw HttpError(401, "Email or password is wrong");
   }
