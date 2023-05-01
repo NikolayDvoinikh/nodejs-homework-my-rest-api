@@ -5,7 +5,13 @@ const {
   Contact,
 } = require("./contacts");
 
-const { User, registerSchema, loginSchema, subSchema } = require("./user");
+const {
+  User,
+  registerSchema,
+  loginSchema,
+  subSchema,
+  emailSchema,
+} = require("./user");
 
 module.exports = {
   Contact,
@@ -16,4 +22,5 @@ module.exports = {
   registerSchema,
   loginSchema,
   subSchema,
+  emailSchema,
 };

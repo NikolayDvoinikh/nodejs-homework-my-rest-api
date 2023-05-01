@@ -4,15 +4,16 @@ const gravatar = require("gravatar");
 const fs = require("fs/promises");
 const path = require("path");
 
-const { HttpError } = require("../helpers");
+const { HttpError, sendEmail } = require("../helpers");
 const { ctrlWrapper } = require("../utils");
 
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { nanoid } = require("nanoid");
 
 require("dotenv").config;
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, BASE_URL } = process.env;
 
 const avatarsDir = path.resolve("public", "avatars");
 
@@ -26,12 +27,25 @@ const register = async (req, res) => {
 
   const hashPassword = await bcrypt.hash(password, 10);
   const avatarURL = gravatar.url(email);
+  const verificationToken = nanoid();
 
   const newUser = await User.create({
     ...req.body,
     password: hashPassword,
     avatarURL,
+    verificationToken,
   });
+
+  const verifyEmail = {
+    to: email,
+    subject: "Confirmation authorization",
+    html: `<a target="_blank" href="${BASE_URL}/users/verify/${verificationToken}">
+        <strong>Confirm your email, click to verify</strong>
+      </a>`,
+  };
+
+  await sendEmail(verifyEmail);
+
   res.status(201).json({
     user: {
       email: newUser.email,
@@ -46,7 +60,12 @@ const login = async (req, res) => {
   if (!user) {
     throw HttpError(401, "Email or password is wrong");
   }
-  passwordValidation = await bcrypt.compare(password, user.password);
+
+  if (!user.verify) {
+    throw HttpError(401, "Email not verified");
+  }
+
+  const passwordValidation = await bcrypt.compare(password, user.password);
   if (!passwordValidation) {
     throw HttpError(401, "Email or password is wrong");
   }
@@ -103,6 +122,47 @@ const updateAvatar = async (req, res) => {
   res.json({ avatarURL });
 };
 
+const verificationEmail = async (req, res) => {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  await User.findByIdAndUpdate(user._id, {
+    verify: true,
+    verificationToken: "",
+  });
+  res.json({ message: "Verification successful" });
+};
+
+const resentVerificationEmail = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw HttpError(400, "missing required field email");
+  }
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw HttpError(401);
+  }
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+  const verifyEmail = {
+    to: email,
+    subject: "Confirmation authorization",
+    html: `<a target="_blank" href="${BASE_URL}/users/verify/${user.verificationToken}">
+        <strong>Confirm your email, click to verify</strong>
+      </a>`,
+  };
+
+  await sendEmail(verifyEmail);
+
+  res.json({
+    message: "Verification email sent",
+  });
+};
+
 module.exports = {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
@@ -110,4 +170,6 @@ module.exports = {
   logout: ctrlWrapper(logout),
   updateSubscription: ctrlWrapper(updateSubscription),
   updateAvatar: ctrlWrapper(updateAvatar),
+  verificationEmail: ctrlWrapper(verificationEmail),
+  resentVerificationEmail: ctrlWrapper(resentVerificationEmail),
 };
